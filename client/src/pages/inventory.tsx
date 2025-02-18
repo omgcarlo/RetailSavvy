@@ -37,14 +37,18 @@ export default function Inventory() {
     defaultValues: {
       name: "",
       price: "0",
-      stock: 0,
+      stock: "0",
       imageUrl: "",
     },
   });
 
   const createProduct = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/products", data);
+      return await apiRequest("POST", "/api/products", {
+        ...data,
+        price: Number(data.price),
+        stock: Number(data.stock),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
