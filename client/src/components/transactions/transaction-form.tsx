@@ -108,7 +108,7 @@ export function TransactionForm() {
       total: convertCurrency(total, currency, "USD").toFixed(2),
       isPaid: "1",
       items,
-      date: new Date(),
+      date: new Date().toISOString(),
       customerId: null,
     });
   };
