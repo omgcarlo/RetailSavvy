@@ -19,12 +19,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Plus } from "lucide-react";
+import { z } from "zod";
 
 export default function Inventory() {
   const { data: products } = useQuery<Product[]>({
@@ -32,8 +33,16 @@ export default function Inventory() {
   });
 
   const { toast } = useToast();
+
+  // Extend the insert schema with additional validation
+  const formSchema = insertProductSchema.extend({
+    stock: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+      message: "Stock must be a valid non-negative number",
+    }),
+  });
+
   const form = useForm({
-    resolver: zodResolver(insertProductSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       price: "0",
@@ -54,6 +63,13 @@ export default function Inventory() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({ title: "Product created successfully" });
       form.reset();
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to create product",
+        description: error.message,
+        variant: "destructive"
+      });
     },
   });
 
@@ -91,8 +107,9 @@ export default function Inventory() {
                         <FormItem>
                           <FormLabel>Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} placeholder="Product name" />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -103,8 +120,13 @@ export default function Inventory() {
                         <FormItem>
                           <FormLabel>Price</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" {...field} />
+                            <Input 
+                              type="text"
+                              placeholder="0.00"
+                              {...field} 
+                            />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -115,8 +137,13 @@ export default function Inventory() {
                         <FormItem>
                           <FormLabel>Stock</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input 
+                              type="text"
+                              placeholder="Enter quantity"
+                              {...field}
+                            />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -127,8 +154,9 @@ export default function Inventory() {
                         <FormItem>
                           <FormLabel>Image URL</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="https://..." {...field} />
                           </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
