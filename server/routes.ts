@@ -60,9 +60,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/transactions", validateBody(insertTransactionSchema), async (req, res) => {
-    const { items, ...transaction } = req.body;
-    const newTransaction = await storage.createTransaction(transaction, items);
-    res.status(201).json(newTransaction);
+    try {
+      const { items, ...transaction } = req.body;
+      const newTransaction = await storage.createTransaction(transaction, items);
+      res.status(201).json(newTransaction);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
   });
 
   // Debts

@@ -24,8 +24,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Plus } from "lucide-react";
+import { Package, Plus, Pencil, Trash2 } from "lucide-react";
 import { z } from "zod";
+import { useState } from "react";
 
 export default function Inventory() {
   const { data: products } = useQuery<Product[]>({
@@ -43,15 +44,13 @@ export default function Inventory() {
     },
   });
 
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
   const createProduct = useMutation({
     mutationFn: async (data: any) => {
-      // The schema will validate string inputs, then we convert to numbers for the database
-      const formattedData = {
-        ...data,
-        price: data.price,  // Keep as string, let the API handle conversion
-        stock: data.stock,  // Keep as string, let the API handle conversion
-      };
-      return await apiRequest("POST", "/api/products", formattedData);
+      return await apiRequest("POST", "/api/products", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -61,6 +60,43 @@ export default function Inventory() {
     onError: (error: Error) => {
       toast({ 
         title: "Failed to create product",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const updateProduct = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return await apiRequest("PATCH", `/api/products/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Product updated successfully" });
+      setEditingProduct(null);
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to update product",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
+  const deleteProduct = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: "Product deleted successfully" });
+      setProductToDelete(null);
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to delete product",
         description: error.message,
         variant: "destructive"
       });
@@ -171,6 +207,7 @@ export default function Inventory() {
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,11 +234,139 @@ export default function Inventory() {
                         <span className="text-red-600">Out of Stock</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingProduct(product)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setProductToDelete(product);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
+
+          {/* Edit Product Dialog */}
+          <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+              </DialogHeader>
+              {editingProduct && (
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit((data) =>
+                      updateProduct.mutate({ id: editingProduct.id, data })
+                    )}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      defaultValue={editingProduct.name}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      defaultValue={editingProduct.price.toString()}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="text" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="stock"
+                      defaultValue={editingProduct.stock.toString()}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stock</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="text" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="imageUrl"
+                      defaultValue={editingProduct.imageUrl || ""}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Image URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full">
+                      Update Product
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Product</DialogTitle>
+              </DialogHeader>
+              <p>Are you sure you want to delete this product?</p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDeleteDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (productToDelete) {
+                      deleteProduct.mutate(productToDelete.id);
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </main>
       </div>
     </div>
