@@ -1,169 +1,160 @@
 import { IStorage } from "./types";
-import createMemoryStore from "memorystore";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 import {
-  User,
-  Product,
-  Transaction,
-  TransactionItem,
-  Debt,
-  Customer,
-  Expense,
-  InsertUser,
-  InsertProduct,
-  InsertTransaction,
-  InsertTransactionItem,
-  InsertDebt,
-  InsertCustomer,
-  InsertExpense,
+  users,
+  products,
+  transactions,
+  transactionItems,
+  debts,
+  customers,
+  expenses,
+  type User,
+  type Product,
+  type Transaction,
+  type TransactionItem,
+  type Debt,
+  type Customer,
+  type Expense,
+  type InsertUser,
+  type InsertProduct,
+  type InsertTransaction,
+  type InsertTransactionItem,
+  type InsertDebt,
+  type InsertCustomer,
+  type InsertExpense,
 } from "@shared/schema";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private products: Map<number, Product>;
-  private transactions: Map<number, Transaction>;
-  private transactionItems: Map<number, TransactionItem>;
-  private debts: Map<number, Debt>;
-  private customers: Map<number, Customer>;
-  private expenses: Map<number, Expense>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
-  private currentId: Record<string, number>;
 
   constructor() {
-    this.users = new Map();
-    this.products = new Map();
-    this.transactions = new Map();
-    this.transactionItems = new Map();
-    this.debts = new Map();
-    this.customers = new Map();
-    this.expenses = new Map();
-    this.currentId = {
-      users: 1,
-      products: 1,
-      transactions: 1,
-      transactionItems: 1,
-      debts: 1,
-      customers: 1,
-      expenses: 1,
-    };
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.currentId.users++;
-    const newUser = { ...user, id };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
 
   // Product methods
   async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const id = this.currentId.products++;
-    const newProduct = { ...product, id };
-    this.products.set(id, newProduct);
+    const [newProduct] = await db.insert(products).values(product).returning();
     return newProduct;
   }
 
   async updateProduct(id: number, product: Partial<Product>): Promise<Product> {
-    const existingProduct = this.products.get(id);
-    if (!existingProduct) throw new Error("Product not found");
-    const updatedProduct = { ...existingProduct, ...product };
-    this.products.set(id, updatedProduct);
+    const [updatedProduct] = await db
+      .update(products)
+      .set(product)
+      .where(eq(products.id, id))
+      .returning();
+
+    if (!updatedProduct) {
+      throw new Error("Product not found");
+    }
     return updatedProduct;
   }
 
   async deleteProduct(id: number): Promise<void> {
-    this.products.delete(id);
+    await db.delete(products).where(eq(products.id, id));
   }
 
   // Transaction methods
   async getTransactions(): Promise<Transaction[]> {
-    return Array.from(this.transactions.values());
+    return await db.select().from(transactions);
   }
 
   async createTransaction(
     transaction: InsertTransaction,
     items: InsertTransactionItem[],
   ): Promise<Transaction> {
-    const id = this.currentId.transactions++;
-    const newTransaction = { ...transaction, id };
-    this.transactions.set(id, newTransaction);
+    const [newTransaction] = await db
+      .insert(transactions)
+      .values(transaction)
+      .returning();
 
-    // Create transaction items
-    items.forEach((item) => {
-      const itemId = this.currentId.transactionItems++;
-      this.transactionItems.set(itemId, { ...item, id: itemId });
-    });
+    // Create transaction items with the new transaction ID
+    await db.insert(transactionItems).values(
+      items.map(item => ({
+        ...item,
+        transactionId: newTransaction.id,
+      }))
+    );
 
     return newTransaction;
   }
 
   // Debt methods
   async getDebts(): Promise<Debt[]> {
-    return Array.from(this.debts.values());
+    return await db.select().from(debts);
   }
 
   async createDebt(debt: InsertDebt): Promise<Debt> {
-    const id = this.currentId.debts++;
-    const newDebt = { ...debt, id };
-    this.debts.set(id, newDebt);
+    const [newDebt] = await db.insert(debts).values(debt).returning();
     return newDebt;
   }
 
   async updateDebt(id: number, debt: Partial<Debt>): Promise<Debt> {
-    const existingDebt = this.debts.get(id);
-    if (!existingDebt) throw new Error("Debt not found");
-    const updatedDebt = { ...existingDebt, ...debt };
-    this.debts.set(id, updatedDebt);
+    const [updatedDebt] = await db
+      .update(debts)
+      .set(debt)
+      .where(eq(debts.id, id))
+      .returning();
+
+    if (!updatedDebt) {
+      throw new Error("Debt not found");
+    }
     return updatedDebt;
   }
 
   // Customer methods
   async getCustomers(): Promise<Customer[]> {
-    return Array.from(this.customers.values());
+    return await db.select().from(customers);
   }
 
   async createCustomer(customer: InsertCustomer): Promise<Customer> {
-    const id = this.currentId.customers++;
-    const newCustomer = { ...customer, id };
-    this.customers.set(id, newCustomer);
+    const [newCustomer] = await db.insert(customers).values(customer).returning();
     return newCustomer;
   }
 
   // Expense methods
   async getExpenses(): Promise<Expense[]> {
-    return Array.from(this.expenses.values());
+    return await db.select().from(expenses);
   }
 
   async createExpense(expense: InsertExpense): Promise<Expense> {
-    const id = this.currentId.expenses++;
-    const newExpense = { ...expense, id };
-    this.expenses.set(id, newExpense);
+    const [newExpense] = await db.insert(expenses).values(expense).returning();
     return newExpense;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -83,13 +83,14 @@ export function TransactionForm() {
       productId: item.product.id,
       quantity: item.quantity,
       price: item.product.price,
+      transactionId: 0, // This will be set by the backend
     }));
 
     createTransaction.mutate({
       transaction: {
-        total,
-        isPaid: 1,
-        date: new Date().toISOString(),
+        total: total.toString(), // Convert to string for decimal type
+        isPaid: "1", // Convert to string for integer type
+        date: new Date(), // Backend will handle date conversion
       },
       items,
     });
