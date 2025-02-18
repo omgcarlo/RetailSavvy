@@ -78,8 +78,9 @@ export function TransactionForm() {
     setCart(cart.filter((item) => item.product.id !== productId));
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity < 1) return;
+  const updateQuantity = (productId: number, value: string) => {
+    const quantity = parseInt(value, 10);
+    if (isNaN(quantity) || quantity < 1) return;
     setCart(
       cart.map((item) =>
         item.product.id === productId ? { ...item, quantity } : item,
@@ -166,9 +167,7 @@ export function TransactionForm() {
                   <Input
                     type="number"
                     value={item.quantity}
-                    onChange={(e) =>
-                      updateQuantity(item.product.id, parseInt(e.target.value))
-                    }
+                    onChange={(e) => updateQuantity(item.product.id, e.target.value)}
                     className="w-20"
                   />
                 </TableCell>
