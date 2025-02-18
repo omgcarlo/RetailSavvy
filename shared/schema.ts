@@ -63,7 +63,14 @@ export const expenses = pgTable("expenses", {
 
 // Create insert schemas
 export const insertUserSchema = createInsertSchema(users);
-export const insertProductSchema = createInsertSchema(products);
+export const insertProductSchema = createInsertSchema(products).extend({
+  price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+    message: "Price must be a valid non-negative number",
+  }),
+  stock: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+    message: "Stock must be a valid non-negative number",
+  }),
+});
 export const insertTransactionSchema = createInsertSchema(transactions);
 export const insertTransactionItemSchema = createInsertSchema(transactionItems);
 export const insertDebtSchema = createInsertSchema(debts);

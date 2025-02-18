@@ -33,16 +33,8 @@ export default function Inventory() {
   });
 
   const { toast } = useToast();
-
-  // Extend the insert schema with additional validation
-  const formSchema = insertProductSchema.extend({
-    stock: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
-      message: "Stock must be a valid non-negative number",
-    }),
-  });
-
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(insertProductSchema),
     defaultValues: {
       name: "",
       price: "0",
@@ -53,11 +45,13 @@ export default function Inventory() {
 
   const createProduct = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/products", {
+      // The schema will validate string inputs, then we convert to numbers for the database
+      const formattedData = {
         ...data,
-        price: Number(data.price),
-        stock: Number(data.stock),
-      });
+        price: data.price,  // Keep as string, let the API handle conversion
+        stock: data.stock,  // Keep as string, let the API handle conversion
+      };
+      return await apiRequest("POST", "/api/products", formattedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });

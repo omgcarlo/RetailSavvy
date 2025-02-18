@@ -29,8 +29,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/products", validateBody(insertProductSchema), async (req, res) => {
-    const product = await storage.createProduct(req.body);
-    res.status(201).json(product);
+    try {
+      const productData = {
+        ...req.body,
+        price: Number(req.body.price),
+        stock: Number(req.body.stock),
+      };
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   });
 
   app.patch("/api/products/:id", async (req, res) => {
