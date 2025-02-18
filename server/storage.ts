@@ -31,7 +31,7 @@ import {
 const PostgresSessionStore = connectPg(session);
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -67,7 +67,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const [newProduct] = await db.insert(products).values(product).returning();
+    const [newProduct] = await db.insert(products).values({
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+      imageUrl: product.imageUrl,
+    }).returning();
     return newProduct;
   }
 
@@ -103,12 +108,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     // Create transaction items with the new transaction ID
-    await db.insert(transactionItems).values(
-      items.map(item => ({
+    for (const item of items) {
+      await db.insert(transactionItems).values({
         ...item,
         transactionId: newTransaction.id,
-      }))
-    );
+      });
+    }
 
     return newTransaction;
   }

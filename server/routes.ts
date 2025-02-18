@@ -31,13 +31,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/products", validateBody(insertProductSchema), async (req, res) => {
     try {
       const productData = {
-        ...req.body,
-        price: Number(req.body.price),
-        stock: Number(req.body.stock),
+        name: req.body.name,
+        price: req.body.price,  // Schema already validates this as string
+        stock: req.body.stock,  // Schema already validates this as string
+        imageUrl: req.body.imageUrl,
       };
       const product = await storage.createProduct(productData);
       res.status(201).json(product);
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   });
