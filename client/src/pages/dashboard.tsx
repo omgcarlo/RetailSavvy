@@ -5,8 +5,11 @@ import { SalesChart } from "@/components/dashboard/sales-chart";
 import { useQuery } from "@tanstack/react-query";
 import { Transaction, Expense, Debt } from "@shared/schema";
 import { format } from "date-fns";
+import { useCurrency } from "@/hooks/use-currency";
+import { convertCurrency } from "@/lib/currency";
 
 export default function Dashboard() {
+  const { currency } = useCurrency();
   const { data: transactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
   });
@@ -26,10 +29,10 @@ export default function Dashboard() {
     const totalDebts = debts?.reduce((acc, d) => acc + Number(d.amount), 0) || 0;
 
     return {
-      totalSales,
-      totalExpenses,
+      totalSales: convertCurrency(totalSales, "USD", currency),
+      totalExpenses: convertCurrency(totalExpenses, "USD", currency),
       totalTransactions,
-      totalDebts,
+      totalDebts: convertCurrency(totalDebts, "USD", currency),
     };
   };
 
@@ -39,7 +42,8 @@ export default function Dashboard() {
     const salesByDate = new Map<string, number>();
     transactions.forEach((t) => {
       const date = format(new Date(t.date), "MMM d");
-      salesByDate.set(date, (salesByDate.get(date) || 0) + Number(t.total));
+      const amount = convertCurrency(Number(t.total), "USD", currency);
+      salesByDate.set(date, (salesByDate.get(date) || 0) + amount);
     });
 
     return Array.from(salesByDate.entries()).map(([date, amount]) => ({

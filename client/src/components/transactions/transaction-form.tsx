@@ -100,17 +100,17 @@ export function TransactionForm() {
     const items = cart.map((item) => ({
       productId: item.product.id,
       quantity: item.quantity,
-      price: convertCurrency(item.product.price, currency, "USD").toString(),
+      price: convertCurrency(Number(item.product.price), currency, "USD").toString(),
     }));
 
     createTransaction.mutate({
       transaction: {
         total: convertCurrency(total, currency, "USD").toString(),
         isPaid: 1,
+        items,
         date: new Date().toISOString(),
         customerId: null,
       },
-      items,
     });
   };
 
@@ -204,8 +204,8 @@ export function TransactionForm() {
             currency
           )}
         </div>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           disabled={cart.length === 0 || createTransaction.isPending}
         >
           {createTransaction.isPending ? "Processing..." : "Complete Transaction"}
