@@ -62,7 +62,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transactions", validateBody(insertTransactionSchema), async (req, res) => {
     try {
       const { items, ...transaction } = req.body;
-      const newTransaction = await storage.createTransaction(transaction, items);
+      // Convert string values to numbers for DB insertion
+      const parsedTransaction = {
+        ...transaction,
+        total: Number(transaction.total),
+        isPaid: Number(transaction.isPaid)
+      };
+      const parsedItems = items.map((item: any) => ({
+        ...item,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        productId: Number(item.productId)
+      }));
+      const newTransaction = await storage.createTransaction(parsedTransaction, parsedItems);
       res.status(201).json(newTransaction);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
