@@ -10,10 +10,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Plus, Trash2 } from "lucide-react";
+import { Currency, currencies, formatCurrency, convertCurrency } from "@/lib/currency";
 
 type CartItem = {
   product: Product;
@@ -22,6 +30,7 @@ type CartItem = {
 
 export function TransactionForm() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [currency, setCurrency] = useState<Currency>("USD");
   const { toast } = useToast();
 
   const { data: products } = useQuery<Product[]>({
@@ -39,6 +48,13 @@ export function TransactionForm() {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       toast({ title: "Transaction created successfully" });
       setCart([]);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create transaction",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -83,14 +99,14 @@ export function TransactionForm() {
       productId: item.product.id,
       quantity: item.quantity,
       price: item.product.price,
-      transactionId: 0, // This will be set by the backend
     }));
 
     createTransaction.mutate({
       transaction: {
-        total: total.toString(), // Convert to string for decimal type
-        isPaid: "1", // Convert to string for integer type
-        date: new Date(), // Backend will handle date conversion
+        total: total.toString(),
+        isPaid: 1,
+        date: new Date().toISOString(),
+        customerId: null,
       },
       items,
     });
@@ -98,6 +114,24 @@ export function TransactionForm() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        <Select
+          value={currency}
+          onValueChange={(value: Currency) => setCurrency(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select currency" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(currencies).map(([code, curr]) => (
+              <SelectItem key={code} value={code}>
+                {curr.symbol} {code}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products?.map((product) => (
           <Button
@@ -117,7 +151,7 @@ export function TransactionForm() {
             )}
             <span className="text-sm font-medium">{product.name}</span>
             <span className="text-sm text-muted-foreground">
-              ${Number(product.price).toFixed(2)}
+              {formatCurrency(convertCurrency(product.price, "USD", currency), currency)}
             </span>
           </Button>
         ))}
@@ -138,7 +172,12 @@ export function TransactionForm() {
             {cart.map((item) => (
               <TableRow key={item.product.id}>
                 <TableCell>{item.product.name}</TableCell>
-                <TableCell>${Number(item.product.price).toFixed(2)}</TableCell>
+                <TableCell>
+                  {formatCurrency(
+                    convertCurrency(item.product.price, "USD", currency),
+                    currency
+                  )}
+                </TableCell>
                 <TableCell>
                   <Input
                     type="number"
@@ -150,7 +189,14 @@ export function TransactionForm() {
                   />
                 </TableCell>
                 <TableCell>
-                  ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                  {formatCurrency(
+                    convertCurrency(
+                      Number(item.product.price) * item.quantity,
+                      "USD",
+                      currency
+                    ),
+                    currency
+                  )}
                 </TableCell>
                 <TableCell>
                   <Button
@@ -169,10 +215,16 @@ export function TransactionForm() {
 
       <div className="flex justify-between items-center">
         <div className="text-lg font-semibold">
-          Total: ${calculateTotal().toFixed(2)}
+          Total: {formatCurrency(
+            convertCurrency(calculateTotal(), "USD", currency),
+            currency
+          )}
         </div>
-        <Button onClick={handleSubmit} disabled={cart.length === 0}>
-          Complete Transaction
+        <Button 
+          onClick={handleSubmit} 
+          disabled={cart.length === 0 || createTransaction.isPending}
+        >
+          {createTransaction.isPending ? "Processing..." : "Complete Transaction"}
         </Button>
       </div>
     </div>

@@ -21,6 +21,7 @@ import {
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 export default function Transactions() {
   const { data: transactions } = useQuery<Transaction[]>({
@@ -69,7 +70,7 @@ export default function Transactions() {
                     <TableCell>
                       {format(new Date(transaction.date), "MMM d, yyyy")}
                     </TableCell>
-                    <TableCell>${Number(transaction.total).toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(transaction.total)}</TableCell>
                     <TableCell>
                       {transaction.isPaid ? (
                         <span className="text-green-600">Paid</span>
