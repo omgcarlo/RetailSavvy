@@ -22,6 +22,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Plus, Trash2 } from "lucide-react";
 import { Currency, currencies, formatCurrency, convertCurrency } from "@/lib/currency";
+import { useCurrency } from "@/hooks/use-currency";
 
 type CartItem = {
   product: Product;
@@ -30,7 +31,7 @@ type CartItem = {
 
 export function TransactionForm() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [currency, setCurrency] = useState<Currency>("USD");
+  const { currency } = useCurrency(); // Use global currency context
   const { toast } = useToast();
 
   const { data: products } = useQuery<Product[]>({
@@ -115,24 +116,6 @@ export function TransactionForm() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end mb-4">
-        <Select
-          value={currency}
-          onValueChange={(value: Currency) => setCurrency(value)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select currency" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(currencies).map(([code, curr]) => (
-              <SelectItem key={code} value={code}>
-                {curr.symbol} {code}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products?.map((product) => (
           <Button

@@ -71,11 +71,24 @@ export const insertProductSchema = createInsertSchema(products).extend({
     message: "Stock must be a valid non-negative number",
   }),
 });
-export const insertTransactionSchema = createInsertSchema(transactions);
-export const insertTransactionItemSchema = createInsertSchema(transactionItems);
+export const insertTransactionItemSchema = createInsertSchema(transactionItems).extend({
+  price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+    message: "Price must be a valid non-negative number",
+  }),
+});
+export const insertTransactionSchema = createInsertSchema(transactions).extend({
+  total: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+    message: "Total must be a valid non-negative number",
+  }),
+  items: z.array(insertTransactionItemSchema.omit({ transactionId: true })),
+});
 export const insertDebtSchema = createInsertSchema(debts);
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertExpenseSchema = createInsertSchema(expenses);
+
+// Add currency type and schema
+export const currencySchema = z.enum(["USD", "PHP"]);
+export type Currency = z.infer<typeof currencySchema>;
 
 // Export types
 export type User = typeof users.$inferSelect;
