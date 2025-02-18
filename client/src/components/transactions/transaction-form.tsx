@@ -100,18 +100,16 @@ export function TransactionForm() {
     // Convert all amounts to USD for storage
     const items = cart.map((item) => ({
       productId: item.product.id,
-      quantity: item.quantity,
-      price: convertCurrency(Number(item.product.price), currency, "USD").toString(),
+      quantity: item.quantity.toString(),
+      price: convertCurrency(Number(item.product.price), currency, "USD").toFixed(2),
     }));
 
     createTransaction.mutate({
-      transaction: {
-        total: convertCurrency(total, currency, "USD").toString(),
-        isPaid: 1,
-        items,
-        date: new Date().toISOString(),
-        customerId: null,
-      },
+      total: convertCurrency(total, currency, "USD").toFixed(2),
+      isPaid: "1",
+      items,
+      date: new Date().toISOString(),
+      customerId: null,
     });
   };
 
