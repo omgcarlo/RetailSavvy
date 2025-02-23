@@ -1,5 +1,9 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Product, InsertTransaction, InsertTransactionItem } from "@shared/schema";
+import {
+  Product,
+  InsertTransaction,
+  InsertTransactionItem,
+} from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,8 +25,9 @@ import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Plus, Trash2 } from "lucide-react";
-import { Currency, currencies, formatCurrency, convertCurrency } from "@/lib/currency";
+import { Currency, currencies, formatCurrency } from "@/lib/currency";
 import { useCurrency } from "@/hooks/use-currency";
+import { format } from "date-fns"; // Added by Carlo
 
 type CartItem = {
   product: Product;
@@ -96,20 +101,58 @@ export function TransactionForm() {
   };
 
   const handleSubmit = () => {
-    const total = calculateTotal();
-    const items = cart.map((item) => ({
-      productId: item.product.id,
-      quantity: item.quantity.toString(),
-      price: Number(item.product.price).toFixed(2),
-    }));
+    try {
+      // Calculate the total cost of the transaction
+      const total = calculateTotal();
 
-    createTransaction.mutate({
-      total: total.toFixed(2),
-      isPaid: "1",
-      items,
-      date: new Date().toISOString(),
-      customerId: null,
-    });
+      // Prepare the transaction items
+      const items = cart.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity, // Send as a number
+        price: Number(item.product.price).toFixed(2),
+      }));
+
+      // Serialize the date object into an ISO string
+      const date = new Date(); // Current date
+      const formattedDate = date.toISOString(); // "2025-02-23T00:00:00.000Z"
+
+      // Log the prepared transaction data for debugging purposes
+      console.log("Submitting transaction data:", {
+        total: total.toFixed(2),
+        isPaid: 1, // Send as a number
+        items,
+        date: formattedDate, // Serialized date
+        customerId: null,
+      });
+
+      // Send the transaction data to the backend using the mutation
+      createTransaction.mutate(
+        {
+          total: total.toFixed(2),
+          isPaid: 1, // Send as a number
+          items,
+          date: date, // Serialized date
+          customerId: null,
+        },
+        {
+          onError: (error: Error) => {
+            console.error("Error creating transaction:", error);
+            toast({
+              title: "Failed to create transaction",
+              description: error.message || "An unexpected error occurred.",
+              variant: "destructive",
+            });
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Unexpected error in handleSubmit:", error);
+      toast({
+        title: "An unexpected error occurred",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -161,14 +204,16 @@ export function TransactionForm() {
                   <Input
                     type="number"
                     value={item.quantity}
-                    onChange={(e) => updateQuantity(item.product.id, e.target.value)}
+                    onChange={(e) =>
+                      updateQuantity(item.product.id, e.target.value)
+                    }
                     className="w-20"
                   />
                 </TableCell>
                 <TableCell>
                   {formatCurrency(
                     Number(item.product.price) * item.quantity,
-                    currency
+                    currency,
                   )}
                 </TableCell>
                 <TableCell>
@@ -194,7 +239,9 @@ export function TransactionForm() {
           onClick={handleSubmit}
           disabled={cart.length === 0 || createTransaction.isPending}
         >
-          {createTransaction.isPending ? "Processing..." : "Complete Transaction"}
+          {createTransaction.isPending
+            ? "Processing..."
+            : "Complete Transaction"}
         </Button>
       </div>
     </div>
