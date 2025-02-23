@@ -29,10 +29,10 @@ export default function Dashboard() {
     const totalDebts = debts?.reduce((acc, d) => acc + Number(d.amount), 0) || 0;
 
     return {
-      totalSales: convertCurrency(totalSales, "USD", currency),
-      totalExpenses: convertCurrency(totalExpenses, "USD", currency),
+      totalSales,
+      totalExpenses,
       totalTransactions,
-      totalDebts: convertCurrency(totalDebts, "USD", currency),
+      totalDebts,
     };
   };
 
@@ -42,7 +42,7 @@ export default function Dashboard() {
     const salesByDate = new Map<string, number>();
     transactions.forEach((t) => {
       const date = format(new Date(t.date), "MMM d");
-      const amount = convertCurrency(Number(t.total), "USD", currency);
+      const amount = Number(t.total);
       salesByDate.set(date, (salesByDate.get(date) || 0) + amount);
     });
 
