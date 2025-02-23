@@ -155,10 +155,7 @@ export function TransactionForm() {
               <TableRow key={item.product.id}>
                 <TableCell>{item.product.name}</TableCell>
                 <TableCell>
-                  {formatCurrency(
-                    convertCurrency(item.product.price, "USD", currency),
-                    currency
-                  )}
+                  {formatCurrency(item.product.price, currency)}
                 </TableCell>
                 <TableCell>
                   <Input
