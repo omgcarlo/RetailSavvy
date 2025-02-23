@@ -28,6 +28,10 @@ import { Package, Plus, Pencil, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { useState } from "react";
 
+const formatCurrency = (amount: number, currency: string = "USD"): string => {
+  return `${currency} ${amount.toFixed(2)}`;
+};
+
 export default function Inventory() {
   const { data: products } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -225,7 +229,7 @@ export default function Inventory() {
                       )}
                       {product.name}
                     </TableCell>
-                    <TableCell>${Number(product.price).toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(Number(product.price), "PHP")}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       {product.stock > 0 ? (

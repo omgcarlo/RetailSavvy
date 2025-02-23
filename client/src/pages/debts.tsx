@@ -180,7 +180,7 @@ export default function Debts() {
                     <TableCell>
                       {customers?.find((c) => c.id === debt.customerId)?.name}
                     </TableCell>
-                    <TableCell>${Number(debt.amount).toFixed(2)}</TableCell>
+                    <TableCell>₱{Number(debt.amount).toFixed(2)}</TableCell>
                     <TableCell>{debt.description}</TableCell>
                     <TableCell>
                       {debt.isPaid ? (

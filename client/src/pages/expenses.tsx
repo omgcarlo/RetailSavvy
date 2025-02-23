@@ -129,7 +129,7 @@ export default function Expenses() {
                       {format(new Date(expense.date), "MMM d, yyyy")}
                     </TableCell>
                     <TableCell>{expense.description}</TableCell>
-                    <TableCell>${Number(expense.amount).toFixed(2)}</TableCell>
+                    <TableCell>₱{Number(expense.amount).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
