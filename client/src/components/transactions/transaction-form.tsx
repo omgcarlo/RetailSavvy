@@ -97,15 +97,14 @@ export function TransactionForm() {
 
   const handleSubmit = () => {
     const total = calculateTotal();
-    // Convert all amounts to USD for storage
     const items = cart.map((item) => ({
       productId: item.product.id,
       quantity: item.quantity.toString(),
-      price: convertCurrency(Number(item.product.price), currency, "USD").toFixed(2),
+      price: Number(item.product.price).toFixed(2),
     }));
 
     createTransaction.mutate({
-      total: convertCurrency(total, currency, "USD").toFixed(2),
+      total: total.toFixed(2),
       isPaid: "1",
       items,
       date: new Date().toISOString(),
@@ -134,7 +133,7 @@ export function TransactionForm() {
             )}
             <span className="text-sm font-medium">{product.name}</span>
             <span className="text-sm text-muted-foreground">
-              {formatCurrency(convertCurrency(product.price, "USD", currency), currency)}
+              {formatCurrency(product.price, currency)}
             </span>
           </Button>
         ))}
