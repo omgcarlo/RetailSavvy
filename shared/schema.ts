@@ -1,4 +1,11 @@
-import { pgTable, text, serial, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  decimal,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -18,12 +25,11 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
 });
 
-// Transaction schema
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  date: text("date").notNull(),
-  customerId: integer("customer_id"),
+  date: timestamp("date", { mode: "string" }).notNull().defaultNow(), // Use timestamp with ISO string format
+  customerId: integer("customer_id").references(() => customers.id), // Add foreign key constraint
   isPaid: integer("is_paid").notNull(),
 });
 
@@ -71,7 +77,9 @@ export const insertProductSchema = createInsertSchema(products).extend({
     message: "Stock must be a valid non-negative number",
   }),
 });
-export const insertTransactionItemSchema = createInsertSchema(transactionItems).extend({
+export const insertTransactionItemSchema = createInsertSchema(
+  transactionItems,
+).extend({
   price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
     message: "Price must be a valid non-negative number",
   }),
