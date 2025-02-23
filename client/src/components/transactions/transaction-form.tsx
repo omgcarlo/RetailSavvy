@@ -113,15 +113,15 @@ export function TransactionForm() {
       }));
 
       // Serialize the date object into an ISO string
-      const date = new Date(); // Current date
-      const formattedDate = date.toISOString(); // "2025-02-23T00:00:00.000Z"
+      const currentDate = new Date();
+      const formattedDate = format(currentDate, "yyyy-MM-dd");
 
       // Log the prepared transaction data for debugging purposes
       console.log("Submitting transaction data:", {
         total: total.toFixed(2),
-        isPaid: 1, // Send as a number
+        isPaid: 1,
         items,
-        date: formattedDate, // Serialized date
+        date: formattedDate,
         customerId: null,
       });
 
@@ -129,9 +129,9 @@ export function TransactionForm() {
       createTransaction.mutate(
         {
           total: total.toFixed(2),
-          isPaid: 1, // Send as a number
+          isPaid: 1,
           items,
-          date: date, // Serialized date
+          date: formattedDate,
           customerId: null,
         },
         {

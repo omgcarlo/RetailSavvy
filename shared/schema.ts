@@ -22,7 +22,7 @@ export const products = pgTable("products", {
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  date: timestamp("date").notNull().defaultNow(),
+  date: text("date").notNull(),
   customerId: integer("customer_id"),
   isPaid: integer("is_paid").notNull(),
 });
