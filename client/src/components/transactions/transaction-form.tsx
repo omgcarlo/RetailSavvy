@@ -170,11 +170,7 @@ export function TransactionForm() {
                 </TableCell>
                 <TableCell>
                   {formatCurrency(
-                    convertCurrency(
-                      Number(item.product.price) * item.quantity,
-                      "USD",
-                      currency
-                    ),
+                    Number(item.product.price) * item.quantity,
                     currency
                   )}
                 </TableCell>
@@ -195,10 +191,7 @@ export function TransactionForm() {
 
       <div className="flex justify-between items-center">
         <div className="text-lg font-semibold">
-          Total: {formatCurrency(
-            convertCurrency(calculateTotal(), "USD", currency),
-            currency
-          )}
+          Total: {formatCurrency(calculateTotal(), currency)}
         </div>
         <Button
           onClick={handleSubmit}
