@@ -9,7 +9,7 @@ type CurrencyContextType = {
 const CurrencyContext = createContext<CurrencyContextType | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [currency, setCurrency] = useState<Currency>("USD");
+  const [currency, setCurrency] = useState<Currency>("PHP");
 
   return (
     <CurrencyContext.Provider value={{ currency, setCurrency }}>
